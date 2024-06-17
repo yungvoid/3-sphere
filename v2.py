@@ -33,84 +33,102 @@ def project_S3_to_R3(S3):
 
 """--------------------main-----------------"""
 
-num_points_on_great_circle = 64
+num_points_on_great_circle = 32
 num_points_on_great_arcs = 32
 num_points_on_small_arcs = 16
+num_points_on_interior_arcs = 8
+m = 5
+j = 2
+B_surface = True
+B_interiror = True
 
-logging.debug("Generating great circle D")
+# Initialize the figure
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+### Generate, project and plot the great circle D ###
 # Define two non-orthogonal vectors for the great circle
 u_D = np.array([1, 1, 0, 0]) / np.sqrt(2)
 v_D = np.array([0, 0, 1, 1]) / np.sqrt(2)
 # Generate the great circle
 D = generate_great_circle(num_points_on_great_circle, u_D, v_D)
-logging.debug("Great circle D generated")
-
-logging.debug("Projecting great circle D to 3D space")  
 # Project the great circle to 3D space
 DX, DY, DZ = project_S3_to_R3(D)
-logging.debug("Great circle D projected to 3D space")
+ax.scatter(DX, DY, DZ, color='blue', s=1)  # Plot the great circle D in green
+logging.debug("Great circle D generetad, projected and plottet")
 
-logging.debug("Generating complementary great circle E")
+
+### Generate, project and plot the complementary great circle E ###
+# Generate the complementary great circle by rotating u and v by 90 degrees
 u_E = np.array([-v_D[1], v_D[0], -v_D[3], v_D[2]])
 v_E = np.array([-u_D[1], u_D[0], -u_D[3], u_D[2]])
-
 # Generate the complementary great circle
 E = generate_great_circle(num_points_on_great_circle, u_E, v_E)
-logging.debug("Complementary great circle E generated")
-
-logging.debug("Projecting complementary great circle E to 3D space")
 # Project the complementary great circle to 3D space
 EX, EY, EZ = project_S3_to_R3(E)
-logging.debug("Complementary great circle E projected to 3D space")
-
-# Plot the projected points
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(DX, DY, DZ, color='green', s=1)  # Plot the great circle D in green
 ax.scatter(EX, EY, EZ, color='red', s=1)  # Plot the complementary great circle E in red
+logging.debug("Complementary great circle E generetad, projected and plottet")
 
-logging.debug("Selecting point on D")
+### Subdivide D into m parts and selecting the border points. 
+### Selecting the j-th vertex ###
+# Calculate the step size
+m_step_size = len(D) // m
+# Select m points from D
+d_points = [D[i * m_step_size % len(D)] for i in range(m)]
+# select points on the edge connecting the points j and j+1
+edge_points = D[j*m_step_size % len(D):(j+1)*m_step_size % len(D)]
+logging.debug("Great circle D divided into m parts and border points selected")
 
-# Select one point on D at random 
-d_index = np.random.randint(len(D))
-d = np.array([D[d_index][0], D[d_index][1], D[d_index][2], D[d_index][3]])
-# Project the points to 3D space
-dX, dY, dZ = project_S3_to_R3(d)
-# Add the points as big green dots on the plot
-ax.scatter(dX, dY, dZ, color='yellow', s=10)  # Plot the point from D
+# Project the m points to 3D space and plot
+for d in d_points:
+    dX, dY, dZ = project_S3_to_R3(d)
+    # Add the points as big yellow dots dots on the plot
+    ax.scatter(dX, dY, dZ, color='black', s=10)  # Plot the point from D
+logging.debug("m points projected and plottet")
 
-logging.debug("Selected point on D: %s", d)
-logging.debug("Generating great arcs")
+"""
+# Project the edge points to 3D space and plot
+for d in edge_points:
+    dX, dY, dZ = project_S3_to_R3(d)
+    # Add the points as big yellow dots dots on the plot
+    ax.scatter(dX, dY, dZ, color='yellow', s=10)  # Plot the point from D
+logging.debug("Edge points projected and plottet")
+"""
 
-
+### Choosing 8 points on the complementary Circle to span sceleton of the disk
 # Calculate the step size
 step_size = len(E) // 8
 # Select 8 equally distant points
 e_points = [E[i * step_size % len(D)] for i in range(8)]
+logging.debug("8 sceleton points on the complementary Circle generetad")
 
-logging.debug("e_points norm: %s", np.linalg.norm(e_points[0]))
-logging.debug("dot product of d and e_points : %s", [np.dot(d, p) for p in e_points])
+### Generate the fat arcs, representing the sceleton of the disk
+### Generate the small arcs, representing the Disk interior
+if B_surface:
+    for i in range(2):
+        d = d_points[(j+i) % m]
+        arcs = [generate_great_arc(num_points_on_great_arcs, d, p, np.arccos(np.dot(d, p))) for p in e_points]
+        # Plot the points of the great arcs
+        for arc in arcs:
+            arc_X, arc_Y, arc_Z = project_S3_to_R3(arc)
+            ax.scatter(arc_X, arc_Y, arc_Z, color='black', s=0.8)  # Plot the new great circle A in black
+        # Generate the small arcs, representing the Disk interior
+        small_arcs = [generate_great_arc(num_points_on_small_arcs, d, p, np.arccos(np.dot(d, p))) for p in E]
+        for arc in small_arcs:
+            arc_X, arc_Y, arc_Z = project_S3_to_R3(arc)
+            ax.scatter(arc_X, arc_Y, arc_Z, color='black', s=0.5)  # Plot the new great circle A in black
+    logging.debug("Boundary Disks generetad, projected and plottet")
 
-points_X, points_Y, points_Z = project_S3_to_R3(np.array(e_points)) # Project the points to 3D space
-ax.scatter(points_X, points_Y, points_Z, color='blue', s=10)  # Plot the points on E in blue
-arcs = [generate_great_arc(num_points_on_great_arcs, d, p, np.arccos(np.dot(d, p))) for p in e_points]
-
-# Plot the points of the great arcs
-for arc in arcs:
-    arc_X, arc_Y, arc_Z = project_S3_to_R3(arc)
-    ax.scatter(arc_X, arc_Y, arc_Z, color='black', s=0.8)  # Plot the new great circle A in black
-
-logging.debug("norm of random point on arc: %s", np.linalg.norm(arcs[np.random.randint(len(arcs))][np.random.randint(len(arcs[0]))]))
-logging.debug("Great arcs generated")
-
-logging.debug("Generating small arcs")
-# Generate the small arcs, representing the Disk
-small_arcs = [generate_great_arc(num_points_on_small_arcs, d, p, np.arccos(np.dot(d, p))) for p in E]
-for arc in small_arcs:
-    arc_X, arc_Y, arc_Z = project_S3_to_R3(arc)
-    ax.scatter(arc_X, arc_Y, arc_Z, color='black', s=0.1)  # Plot the new great circle A in black
-
-logging.debug("Small arcs generated")
+### Generate the interior of the 3-Ball by connecting the edge points with the points on the complementary circle
+if B_interiror:
+    for e in edge_points:
+        arcs = [generate_great_arc(num_points_on_interior_arcs, e, p, np.arccos(np.dot(e, p))) for p in E]
+        # Plot the points of the interiro
+        norm = np.linalg.norm(arcs[np.random.randint(0, len(arcs))][np.random.randint(0, num_points_on_interior_arcs)])
+        logging.debug("Norm of random Ball interior points: %s", norm)
+        for arc in arcs:
+            arc_X, arc_Y, arc_Z = project_S3_to_R3(arc)
+            ax.scatter(arc_X, arc_Y, arc_Z, color='purple', s=0.1, alpha=0.5)  # Plot the new great circle A in black
 
 
 # Set the limits of the plot to -2 to 2 in all directions
