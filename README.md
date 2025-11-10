@@ -59,7 +59,3 @@ pip install -r requirements.txt
 - `S3.py` — simple S³ helpers/experiments.
 - `requirements.txt` — pinned Python dependencies (numpy, matplotlib, imageio).
 - `frames/` — temporary PNG frames when exporting GIFs.
-
-## License
-
-No license specified. If you intend to publish or share, consider adding a LICENSE file.
