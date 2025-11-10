@@ -36,21 +36,6 @@ python Lens.py --gif --gif-path lens.gif --fps 10 --steps 16
 
 Tip: run `python Lens.py --help` for the current list of flags in your version.
 
-### Alternative: GIF of geodesic scaffold with `v2.py`
-
-```zsh
-# Export a GIF (two great circles + arcs)
-python v2.py --gif --gif-path demo.gif --fps 8 --steps 10
-```
-
-`v2.py` constructs:
-- a great circle `D`, a complementary circle `E`,
-- selected boundary points on `D`,
-- surface and interior geodesic arcs connecting these points,
-- per-frame “turning” (shifts along `D`) to create motion.
-
-The script then projects S³ → R³ via stereographic projection and renders the points and arcs in 3D, frame by frame, combining frames into a GIF.
-
 ## Mathematical notes (informal)
 
 - S³ can be visualized through families of great circles and geodesic arcs. We parameterize great circles as linear combinations of two orthonormal vectors in R⁴ and project to R³ with stereographic projection.
